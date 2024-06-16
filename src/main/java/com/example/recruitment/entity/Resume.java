@@ -27,6 +27,8 @@ public class Resume {
     private String title;
     private String description;
 
+    private Integer workingYear;
+
     @Convert(converter = EducationListJsonConverter.class)
     @Column(columnDefinition = "TEXT")
     private List<Education> education;
@@ -46,11 +48,13 @@ public class Resume {
     @Builder
     public Resume(String title,
                   String description,
+                  Integer workingYear,
                   List<Education> education,
                   ResumeStatus status) {
 
         this.title = title;
         this.description = description;
+        this.workingYear = workingYear;
         this.education = education;
         this.status = status;
     }
@@ -61,6 +65,7 @@ public class Resume {
                 .id(this.id)
                 .title(this.title)
                 .description(this.description)
+                .workingYear(this.workingYear)
                 .education(this.education)
                 .status(this.status)
                 .modifyDate(this.modifyDate)
@@ -73,6 +78,7 @@ public class Resume {
     public Resume update(ResumeDto.Request request) {
         this.title = request.title();
         this.description = request.description();
+        this.workingYear = request.workingYear();
         this.education = request.education();
         this.status = request.status();
 

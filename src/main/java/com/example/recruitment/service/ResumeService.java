@@ -3,6 +3,8 @@ package com.example.recruitment.service;
 import com.example.recruitment.dto.ResumeDto;
 import com.example.recruitment.entity.Member;
 import com.example.recruitment.entity.Resume;
+import com.example.recruitment.exception.CustomException;
+import com.example.recruitment.exception.ErrorCode;
 import com.example.recruitment.repository.MemberRepository;
 import com.example.recruitment.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,7 @@ public class ResumeService {
     @Transactional
     public Long postResume(ResumeDto.Request request) {
         Member member = memberRepository.findByLoginId(request.memberLoginId())
-                .orElseThrow(() -> new RuntimeException("개인회원 정보 없음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         Resume resume = request.toEntity();
         resume.setMember(member);
@@ -39,16 +41,17 @@ public class ResumeService {
 
     @Transactional(readOnly = true)
     public ResumeDto.Response getResume(Long id) {
-        return resumeRepository.findById(id).orElseThrow(() -> new RuntimeException("이력서 정보 없음")).toDto();
+        return resumeRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESUME_NOT_FOUND)).toDto();
     }
 
     @Transactional
     public ResumeDto.Response modifyResume(Long id, ResumeDto.Request request) {
         Resume resume = resumeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("이력서 정보 없음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.RESUME_NOT_FOUND));
 
         if (!Objects.equals(resume.getMember().getLoginId(), request.memberLoginId())) {
-            throw new RuntimeException("이력서를 작성한 개인회원만 수정할수 있습니다.");
+            throw new CustomException(ErrorCode.MEMBER_NOT_MATCH);
         }
 
         return resume.update(request).toDto();
@@ -57,10 +60,10 @@ public class ResumeService {
     @Transactional
     public void deleteResume(Long id, String memberLoginId) {
         Resume resume = resumeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("이력서 정보 없음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.RESUME_NOT_FOUND));
 
         if (!Objects.equals(resume.getMember().getLoginId(), memberLoginId)) {
-            throw new RuntimeException("이력서를 작성한 개인회원만 삭제할수 있습니다.");
+            throw new CustomException(ErrorCode.MEMBER_NOT_MATCH);
         }
 
         resumeRepository.delete(resume);

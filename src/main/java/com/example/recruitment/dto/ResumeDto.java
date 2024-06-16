@@ -12,6 +12,7 @@ public class ResumeDto {
     public record Request(
             String title,
             String description,
+            Integer workingYear,
             List<Education> education,
             ResumeStatus status,
             String memberLoginId
@@ -20,6 +21,7 @@ public class ResumeDto {
             return Resume.builder()
                     .title(title)
                     .description(description)
+                    .workingYear(workingYear)
                     .education(education)
                     .status(status)
                     .build();
@@ -32,6 +34,7 @@ public class ResumeDto {
         private Long id;
         private String title;
         private String description;
+        private Integer workingYear;
         private List<Education> education;
         private ResumeStatus status;
         private LocalDateTime modifyDate;
