@@ -23,7 +23,7 @@ public class Application {
     @JoinColumn(name = "recruitment_id")
     private Recruitment recruitment;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resume_id")
     private Resume resume;
 
@@ -32,5 +32,4 @@ public class Application {
 
     @CreationTimestamp
     LocalDateTime appliedDate;
-
 }

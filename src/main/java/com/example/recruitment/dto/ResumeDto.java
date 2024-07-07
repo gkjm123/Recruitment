@@ -41,8 +41,5 @@ public class ResumeDto {
         private LocalDateTime postingDate;
         private Long memberId;
         private String memberName;
-
     }
-
-
 }

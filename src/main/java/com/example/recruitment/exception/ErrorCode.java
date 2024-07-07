@@ -2,7 +2,6 @@ package com.example.recruitment.exception;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
 
 @Getter
 @RequiredArgsConstructor
@@ -19,5 +18,4 @@ public enum ErrorCode {
     CONVERT_ERROR("JSON 타입변환 오류");
 
     private final String message;
-
 }

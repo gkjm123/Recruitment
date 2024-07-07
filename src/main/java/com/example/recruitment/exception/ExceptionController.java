@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
 public class ExceptionController {
-
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ExceptionResponse> exceptionHandler(CustomException c) {
         return ResponseEntity.badRequest().body(new ExceptionResponse(c.getMessage(), c.getErrorCode()));

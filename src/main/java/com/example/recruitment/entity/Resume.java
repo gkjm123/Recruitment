@@ -84,5 +84,4 @@ public class Resume {
 
         return this;
     }
-
 }

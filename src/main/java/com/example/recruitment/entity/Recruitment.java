@@ -37,7 +37,6 @@ public class Recruitment {
     public Recruitment(String title,
                 Integer recruitmentCount,
                 LocalDateTime closingDate) {
-
         this.title = title;
         this.recruitmentCount = recruitmentCount;
         this.closingDate = closingDate;
@@ -69,6 +68,4 @@ public class Recruitment {
 
         return this;
     }
-
-
 }

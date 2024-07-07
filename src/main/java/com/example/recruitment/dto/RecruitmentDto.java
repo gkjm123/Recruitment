@@ -38,8 +38,5 @@ public class RecruitmentDto {
         private LocalDateTime postingDate;
         private Long companyMemberId;
         private String companyName;
-
     }
-
-
 }

@@ -21,6 +21,4 @@ public class CompanyMember {
         this.companyName = companyName;
         this.loginId = loginId;
     }
-
-
 }

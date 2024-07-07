@@ -18,7 +18,6 @@ import java.util.Objects;
 @Converter
 @RequiredArgsConstructor
 public class EducationListJsonConverter implements AttributeConverter<List<Education>, String> {
-
     private final ObjectMapper objectMapper;
 
     @Override

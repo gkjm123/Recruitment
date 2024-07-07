@@ -164,10 +164,12 @@ public class RecruitmentService {
 
         List<ResumeDto.Response> passMemberList = new ArrayList<>();
 
+        //우선 모든 지원자 상태를 FAIL 로 바꾸고
         applications.forEach(a -> a.setStatus(ApplicationStatus.FAIL));
 
+        //score 함수를 통해 지원자의 점수를 계산해서 높은 순으로 정렬하고 공고의 채용인원만큼 잘라서 PASS 상태로 바꿔준다.
         applications.stream()
-                .sorted(Comparator.comparing((Application a) -> score(a.getResume().toDto())).reversed())
+                .sorted(Comparator.comparing((Application a) -> score(a.getResume().toDto()), Comparator.reverseOrder()))
                 .limit(recruitment.getRecruitmentCount())
                 .forEach(a -> {
                     a.setStatus(ApplicationStatus.PASS);
@@ -177,6 +179,7 @@ public class RecruitmentService {
         return passMemberList;
     }
 
+    //학력과 경력을 통해 점수를 산출
     public Integer score(ResumeDto.Response resumeDto) {
         int degreePoint = resumeDto.getEducation().stream().mapToInt(Education::getDegree).sum();
         int expPoint = resumeDto.getWorkingYear();
