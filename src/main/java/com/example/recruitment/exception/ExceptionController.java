@@ -9,16 +9,19 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
 public class ExceptionController {
-    @ExceptionHandler(CustomException.class)
-    public ResponseEntity<ExceptionResponse> exceptionHandler(CustomException c) {
-        return ResponseEntity.badRequest().body(new ExceptionResponse(c.getMessage(), c.getErrorCode()));
-    }
 
-    @Getter
-    @ToString
-    @AllArgsConstructor
-    public static class ExceptionResponse {
-        private String message;
-        private ErrorCode errorCode;
-    }
+  @ExceptionHandler(CustomException.class)
+  public ResponseEntity<ExceptionResponse> exceptionHandler(CustomException c) {
+    return ResponseEntity.badRequest()
+        .body(new ExceptionResponse(c.getMessage(), c.getErrorCode()));
+  }
+
+  @Getter
+  @ToString
+  @AllArgsConstructor
+  public static class ExceptionResponse {
+
+    private String message;
+    private ErrorCode errorCode;
+  }
 }

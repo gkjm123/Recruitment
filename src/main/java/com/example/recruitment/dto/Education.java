@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Education {
-    private String school;
-    private Integer degree; //고등학교:0, 학사:1, 석사:2, 박사:3
+
+  private String school;
+  private Integer degree; //고등학교:0, 학사:1, 석사:2, 박사:3
 }

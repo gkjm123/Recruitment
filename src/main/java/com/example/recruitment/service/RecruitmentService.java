@@ -16,192 +16,196 @@ import com.example.recruitment.repository.RecruitmentRepository;
 import com.example.recruitment.repository.ResumeRepository;
 import com.example.recruitment.type.ApplicationStatus;
 import com.example.recruitment.type.RecruitmentStatus;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class RecruitmentService {
-    private final RecruitmentRepository recruitmentRepository;
-    private final CompanyMemberRepository companyMemberRepository;
-    private final ResumeRepository resumeRepository;
-    private final ApplicationRepository applicationRepository;
 
-    @Transactional
-    public Long postRecruitment(RecruitmentDto.Request request) {
-        CompanyMember companyMember = companyMemberRepository.findByLoginId(request.companyMemberLoginId())
-                        .orElseThrow( () -> new CustomException(ErrorCode.COMPANY_NOT_FOUND));
+  private final RecruitmentRepository recruitmentRepository;
+  private final CompanyMemberRepository companyMemberRepository;
+  private final ResumeRepository resumeRepository;
+  private final ApplicationRepository applicationRepository;
 
-        Recruitment recruitment = request.toEntity();
-        recruitment.setCompanyMember(companyMember);
-        recruitment.opening();
+  @Transactional
+  public Long postRecruitment(RecruitmentDto.Request request) {
+    CompanyMember companyMember = companyMemberRepository.findByLoginId(
+            request.companyMemberLoginId())
+        .orElseThrow(() -> new CustomException(ErrorCode.COMPANY_NOT_FOUND));
 
-        recruitmentRepository.save(recruitment);
+    Recruitment recruitment = request.toEntity();
+    recruitment.setCompanyMember(companyMember);
+    recruitment.opening();
 
-        return recruitment.getId();
+    recruitmentRepository.save(recruitment);
+
+    return recruitment.getId();
+  }
+
+  @Transactional(readOnly = true)
+  public List<RecruitmentDto.Response> getRecruitmentList() {
+    List<Recruitment> recruitmentList = recruitmentRepository.findAllByStatus(
+        RecruitmentStatus.OPEN);
+    return recruitmentList.stream().map(Recruitment::toDto).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public RecruitmentDto.Response getRecruitment(Long id) {
+    return recruitmentRepository.findById(id)
+        .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND)).toDto();
+  }
+
+  @Transactional
+  public RecruitmentDto.Response modifyRecruitment(Long id, RecruitmentDto.Request request) {
+    Recruitment recruitment = recruitmentRepository.findById(id)
+        .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+
+    if (!Objects.equals(recruitment.getCompanyMember().getLoginId(),
+        request.companyMemberLoginId())) {
+      throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
     }
 
-    @Transactional(readOnly = true)
-    public List<RecruitmentDto.Response> getRecruitmentList() {
-        List<Recruitment> recruitmentList = recruitmentRepository.findAllByStatus(RecruitmentStatus.OPEN);
-        return recruitmentList.stream().map(Recruitment::toDto).toList();
+    return recruitment.update(request).toDto();
+  }
+
+  @Transactional
+  public void deleteRecruitment(Long id, String companyLoginId) {
+    Recruitment recruitment = recruitmentRepository.findById(id)
+        .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+
+    if (!Objects.equals(recruitment.getCompanyMember().getLoginId(), companyLoginId)) {
+      throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
     }
 
-    @Transactional(readOnly = true)
-    public RecruitmentDto.Response getRecruitment(Long id) {
-        return recruitmentRepository.findById(id).orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND)).toDto();
+    recruitmentRepository.delete(recruitment);
+  }
+
+  @Transactional
+  public Long apply(Long recruitmentId, ApplicationDto.Request request) {
+    Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
+        .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+
+    if (recruitment.getStatus() == RecruitmentStatus.CLOSE) {
+      throw new CustomException(ErrorCode.QUITED_RECRUITMENT);
     }
 
-    @Transactional
-    public RecruitmentDto.Response modifyRecruitment(Long id, RecruitmentDto.Request request) {
-        Recruitment recruitment = recruitmentRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+    Resume resume = resumeRepository.findById(request.resumeId())
+        .orElseThrow(() -> new CustomException(ErrorCode.RESUME_NOT_FOUND));
 
-        if (!Objects.equals(recruitment.getCompanyMember().getLoginId(), request.companyMemberLoginId())) {
-            throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
-        }
-
-        return recruitment.update(request).toDto();
+    if (!Objects.equals(resume.getMember().getLoginId(), request.memberLoginId())) {
+      System.out.println(resume.getMember().getId());
+      System.out.println(request.memberLoginId());
+      throw new CustomException(ErrorCode.MEMBER_NOT_MATCH);
     }
 
-    @Transactional
-    public void deleteRecruitment(Long id, String companyLoginId) {
-        Recruitment recruitment = recruitmentRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+    Application application = Application.builder()
+        .recruitment(recruitment)
+        .resume(resume)
+        .status(ApplicationStatus.APPLY_FINISHED)
+        .build();
 
-        if (!Objects.equals(recruitment.getCompanyMember().getLoginId(), companyLoginId)) {
-            throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
-        }
+    return applicationRepository.save(application).getId();
+  }
 
-        recruitmentRepository.delete(recruitment);
+  @Transactional
+  public List<ResumeDto.Response> getApplicantResume(Long recruitmentId, String companyLoginId) {
+    Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
+        .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+
+    if (!Objects.equals(recruitment.getCompanyMember().getLoginId(), companyLoginId)) {
+      throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
     }
 
-    @Transactional
-    public Long apply(Long recruitmentId, ApplicationDto.Request request) {
-        Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+    List<Application> applications = applicationRepository.findAllByRecruitment_Id(recruitmentId);
 
-        if(recruitment.getStatus() == RecruitmentStatus.CLOSE) {
-            throw new CustomException(ErrorCode.QUITED_RECRUITMENT);
-        }
-
-        Resume resume = resumeRepository.findById(request.resumeId())
-                .orElseThrow(() -> new CustomException(ErrorCode.RESUME_NOT_FOUND));
-
-        if (!Objects.equals(resume.getMember().getLoginId(), request.memberLoginId())) {
-            System.out.println(resume.getMember().getId());
-            System.out.println(request.memberLoginId());
-            throw new CustomException(ErrorCode.MEMBER_NOT_MATCH);
-        }
-
-        Application application = Application.builder()
-                .recruitment(recruitment)
-                .resume(resume)
-                .status(ApplicationStatus.APPLY_FINISHED)
-                .build();
-
-        return applicationRepository.save(application).getId();
+    if (applications.isEmpty()) {
+      throw new CustomException(ErrorCode.NO_RECRUITMENT);
     }
 
-    @Transactional
-    public List<ResumeDto.Response> getApplicantResume(Long recruitmentId, String companyLoginId) {
-        Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+    return applications.stream().map(a -> a.getResume().toDto()).toList();
+  }
 
-        if (!Objects.equals(recruitment.getCompanyMember().getLoginId(), companyLoginId)) {
-            throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
-        }
+  @Transactional
+  public void quitRecruitment(Long id, String companyLoginId) {
+    Recruitment recruitment = recruitmentRepository.findById(id)
+        .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
 
-        List<Application> applications = applicationRepository.findAllByRecruitment_Id(recruitmentId);
-
-        if(applications.isEmpty()) {
-            throw new CustomException(ErrorCode.NO_RECRUITMENT);
-        }
-
-        return applications.stream().map(a -> a.getResume().toDto()).toList();
+    if (!Objects.equals(recruitment.getCompanyMember().getLoginId(), companyLoginId)) {
+      throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
     }
 
-    @Transactional
-    public void quitRecruitment(Long id, String companyLoginId) {
-        Recruitment recruitment = recruitmentRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
-
-        if (!Objects.equals(recruitment.getCompanyMember().getLoginId(), companyLoginId)) {
-            throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
-        }
-
-        if (recruitment.getStatus() == RecruitmentStatus.CLOSE) {
-            throw new CustomException(ErrorCode.QUITED_RECRUITMENT);
-        }
-
-        recruitment.setStatus(RecruitmentStatus.CLOSE);
+    if (recruitment.getStatus() == RecruitmentStatus.CLOSE) {
+      throw new CustomException(ErrorCode.QUITED_RECRUITMENT);
     }
 
-    @Transactional
-    public List<ResumeDto.Response> autoPickRecruitment(Long id, String companyLoginId) {
-        Recruitment recruitment = recruitmentRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+    recruitment.setStatus(RecruitmentStatus.CLOSE);
+  }
 
-        if (!Objects.equals(recruitment.getCompanyMember().getLoginId(), companyLoginId)) {
-            throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
-        }
+  @Transactional
+  public List<ResumeDto.Response> autoPickRecruitment(Long id, String companyLoginId) {
+    Recruitment recruitment = recruitmentRepository.findById(id)
+        .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
 
-        if (recruitment.getStatus() == RecruitmentStatus.OPEN) {
-            throw new CustomException(ErrorCode.NOT_QUITED_RECRUITMENT);
-        }
-
-        List<Application> applications = applicationRepository.findAllByRecruitment_Id(id);
-
-        if(applications.isEmpty()) {
-            throw new CustomException(ErrorCode.NO_RECRUITMENT);
-        }
-
-        List<ResumeDto.Response> passMemberList = new ArrayList<>();
-
-        //우선 모든 지원자 상태를 FAIL 로 바꾸고
-        applications.forEach(a -> a.setStatus(ApplicationStatus.FAIL));
-
-        //score 함수를 통해 지원자의 점수를 계산해서 높은 순으로 정렬하고 공고의 채용인원만큼 잘라서 PASS 상태로 바꿔준다.
-        applications.stream()
-                .sorted(Comparator.comparing((Application a) -> score(a.getResume().toDto()), Comparator.reverseOrder()))
-                .limit(recruitment.getRecruitmentCount())
-                .forEach(a -> {
-                    a.setStatus(ApplicationStatus.PASS);
-                    passMemberList.add(a.getResume().toDto());
-                });
-
-        return passMemberList;
+    if (!Objects.equals(recruitment.getCompanyMember().getLoginId(), companyLoginId)) {
+      throw new CustomException(ErrorCode.COMPANY_NOT_MATCH);
     }
 
-    //학력과 경력을 통해 점수를 산출
-    public Integer score(ResumeDto.Response resumeDto) {
-        int degreePoint = resumeDto.getEducation().stream().mapToInt(Education::getDegree).sum();
-        int expPoint = resumeDto.getWorkingYear();
-        return degreePoint + expPoint;
+    if (recruitment.getStatus() == RecruitmentStatus.OPEN) {
+      throw new CustomException(ErrorCode.NOT_QUITED_RECRUITMENT);
     }
 
-    @Transactional
-    public String checkPassOrFail(Long id, String memberLoginId) {
-        Recruitment recruitment = recruitmentRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+    List<Application> applications = applicationRepository.findAllByRecruitment_Id(id);
 
-        Application application = applicationRepository.findByRecruitmentAndResume_Member_LoginId(recruitment, memberLoginId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NO_RECRUITMENT));
-
-        if (application.getStatus() == ApplicationStatus.FAIL) {
-            return "탈락입니다.";
-        }
-        else if (application.getStatus() == ApplicationStatus.PASS) {
-            return "합격입니다.";
-        }
-        else {
-            return "선발작업 대기중입니다.";
-        }
+    if (applications.isEmpty()) {
+      throw new CustomException(ErrorCode.NO_RECRUITMENT);
     }
+
+    List<ResumeDto.Response> passMemberList = new ArrayList<>();
+
+    //우선 모든 지원자 상태를 FAIL 로 바꾸고
+    applications.forEach(a -> a.setStatus(ApplicationStatus.FAIL));
+
+    //score 함수를 통해 지원자의 점수를 계산해서 높은 순으로 정렬하고 공고의 채용인원만큼 잘라서 PASS 상태로 바꿔준다.
+    applications.stream()
+        .sorted(Comparator.comparing((Application a) -> score(a.getResume().toDto()),
+            Comparator.reverseOrder()))
+        .limit(recruitment.getRecruitmentCount())
+        .forEach(a -> {
+          a.setStatus(ApplicationStatus.PASS);
+          passMemberList.add(a.getResume().toDto());
+        });
+
+    return passMemberList;
+  }
+
+  //학력과 경력을 통해 점수를 산출
+  public Integer score(ResumeDto.Response resumeDto) {
+    int degreePoint = resumeDto.getEducation().stream().mapToInt(Education::getDegree).sum();
+    int expPoint = resumeDto.getWorkingYear();
+    return degreePoint + expPoint;
+  }
+
+  @Transactional
+  public String checkPassOrFail(Long id, String memberLoginId) {
+    Recruitment recruitment = recruitmentRepository.findById(id)
+        .orElseThrow(() -> new CustomException(ErrorCode.RECRUITMENT_NOT_FOUND));
+
+    Application application = applicationRepository.findByRecruitmentAndResume_Member_LoginId(
+            recruitment, memberLoginId)
+        .orElseThrow(() -> new CustomException(ErrorCode.NO_RECRUITMENT));
+
+    if (application.getStatus() == ApplicationStatus.FAIL) {
+      return "탈락입니다.";
+    } else if (application.getStatus() == ApplicationStatus.PASS) {
+      return "합격입니다.";
+    } else {
+      return "선발작업 대기중입니다.";
+    }
+  }
 }

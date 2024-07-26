@@ -1,11 +1,23 @@
 package com.example.recruitment.entity;
 
 import com.example.recruitment.type.ApplicationStatus;
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Getter
@@ -14,22 +26,23 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Application {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "application_id")
-    private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recruitment_id")
-    private Recruitment recruitment;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "application_id")
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "resume_id")
-    private Resume resume;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "recruitment_id")
+  private Recruitment recruitment;
 
-    @Enumerated(EnumType.STRING)
-    private ApplicationStatus status;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "resume_id")
+  private Resume resume;
 
-    @CreationTimestamp
-    LocalDateTime appliedDate;
+  @Enumerated(EnumType.STRING)
+  private ApplicationStatus status;
+
+  @CreationTimestamp
+  LocalDateTime appliedDate;
 }
